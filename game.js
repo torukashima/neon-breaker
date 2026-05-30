@@ -27,6 +27,16 @@ const LEVELS = [
     "APYYYYYYPA",
     " AAGGGGAA ",
     "   AYYA   "
+  ],
+  // Level 4: Cyber Neon X (Final Stage!)
+  [
+    "A        A",
+    " ACCCCCCA ",
+    "  APYYPA  ",
+    "   AGGA   ",
+    "  APYYPA  ",
+    " ACCCCCCA ",
+    "A        A"
   ]
 ];
 

@@ -1,0 +1,11 @@
+# System Files
+.DS_Store
+Thumbs.db
+
+# Tooling / CLI Files
+.antigravitycli/
+.system_generated/
+scratch/
+
+# Local logs
+*.log

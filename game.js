@@ -136,6 +136,11 @@ class SoundSynth {
       this.playTone(freq * 2, freq * 3, 1.5, 'triangle', 0.05);
     });
   }
+
+  playSpeedUpWarning() {
+    this.playTone(440, 880, 0.2, 'sawtooth', 0.1);
+    setTimeout(() => this.playTone(554.37, 1108.73, 0.25, 'sawtooth', 0.1), 100);
+  }
 }
 
 const synth = new SoundSynth();
@@ -180,6 +185,12 @@ class Game {
     this.lastTime = 0;
     this.animationId = null;
     this.slowMoActive = 0; // frame duration for slow motion
+    
+    // Speed Escalation State
+    this.levelTime = 0;
+    this.speedUpWarningPlayed = false;
+    this.warningTimer = 0;
+    this.lastSpeedMultiplierString = '';
     
     this.initUI();
     this.initEvents();
@@ -333,6 +344,12 @@ class Game {
     this.paddle.targetWidth = 100;
     this.paddle.x = (LOGICAL_WIDTH - this.paddle.width) / 2;
 
+    // Reset Speed Escalation
+    this.levelTime = 0;
+    this.speedUpWarningPlayed = false;
+    this.warningTimer = 0;
+    this.lastSpeedMultiplierString = '';
+
     // Reset standard ball attached to paddle
     this.balls.push({
       x: LOGICAL_WIDTH / 2,
@@ -483,6 +500,12 @@ class Game {
       this.paddle.width = 100;
       this.paddle.targetWidth = 100;
       this.slowMoActive = 0;
+      
+      // Reset Speed Escalation on losing life
+      this.levelTime = 0;
+      this.speedUpWarningPlayed = false;
+      this.warningTimer = 0;
+      this.lastSpeedMultiplierString = '';
     }
   }
 
@@ -528,6 +551,31 @@ class Game {
   updateHUD() {
     document.getElementById('score-val').innerText = String(this.score).padStart(6, '0');
     document.getElementById('level-val').innerText = this.level;
+    this.updateSpeedHUD();
+  }
+
+  updateSpeedHUD() {
+    const currentLevelBaseSpeed = 6;
+    let timeFactor = 0;
+    const speedUpStart = 15000;
+    if (this.levelTime > speedUpStart) {
+      timeFactor = (this.levelTime - speedUpStart) / 1000;
+    }
+    const targetSpeed = Math.min(12, currentLevelBaseSpeed + timeFactor * 0.15);
+    const speedMultiplier = (targetSpeed / 6.0).toFixed(1) + 'x';
+    
+    if (speedMultiplier !== this.lastSpeedMultiplierString) {
+      this.lastSpeedMultiplierString = speedMultiplier;
+      const speedEl = document.getElementById('speed-val');
+      if (speedEl) {
+        speedEl.innerText = speedMultiplier;
+        if (targetSpeed > 6.0) {
+          speedEl.className = 'hud-value neon-pink';
+        } else {
+          speedEl.className = 'hud-value neon-green';
+        }
+      }
+    }
   }
 
   // --- Mechanics updates ---
@@ -537,6 +585,38 @@ class Game {
     // 1. Slow Mo & Laser Timers
     if (this.slowMoActive > 0) this.slowMoActive--;
     if (this.paddle.laserActive > 0) this.paddle.laserActive--;
+
+    // Update speed escalation timer and warning
+    const hasActiveBall = this.balls.some(b => !b.attached);
+    if (hasActiveBall) {
+      this.levelTime += dt;
+    }
+
+    const currentLevelBaseSpeed = 6;
+    let timeFactor = 0;
+    const speedUpStart = 15000; // 15 seconds
+    if (this.levelTime > speedUpStart) {
+      timeFactor = (this.levelTime - speedUpStart) / 1000;
+      
+      if (!this.speedUpWarningPlayed) {
+        this.speedUpWarningPlayed = true;
+        synth.playSpeedUpWarning();
+        this.warningTimer = 120; // 2 seconds (120 frames at 60fps)
+      }
+    }
+
+    const targetSpeed = Math.min(12, currentLevelBaseSpeed + timeFactor * 0.15);
+    this.balls.forEach(ball => {
+      if (!ball.attached) {
+        ball.speed = targetSpeed;
+      }
+    });
+
+    if (this.warningTimer > 0) {
+      this.warningTimer--;
+    }
+
+    this.updateSpeedHUD();
 
     // 2. Paddle movement (Keyboard priority, with mouse/touch support)
     let keyboardMoved = false;
@@ -908,6 +988,22 @@ class Game {
       this.ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
       this.ctx.fill();
     });
+
+    // 7. Draw Warning Overlay (SPEED UP!)
+    if (this.warningTimer > 0) {
+      this.ctx.save();
+      // Flashes every 15 frames
+      if (Math.floor(this.warningTimer / 15) % 2 === 0) {
+        this.ctx.fillStyle = '#ff007f';
+        this.ctx.shadowColor = '#ff007f';
+        this.ctx.shadowBlur = 15;
+        this.ctx.font = 'bold 36px "Orbitron", sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('SPEED UP!', LOGICAL_WIDTH / 2, LOGICAL_HEIGHT / 2);
+      }
+      this.ctx.restore();
+    }
   }
 
   // --- Animation loop ---

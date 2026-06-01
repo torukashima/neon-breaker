@@ -561,7 +561,7 @@ class Game {
     if (this.levelTime > speedUpStart) {
       timeFactor = (this.levelTime - speedUpStart) / 1000;
     }
-    const targetSpeed = Math.min(12, currentLevelBaseSpeed + timeFactor * 0.15);
+    const targetSpeed = Math.min(18, currentLevelBaseSpeed + timeFactor * 0.15);
     const speedMultiplier = (targetSpeed / 6.0).toFixed(1) + 'x';
     
     if (speedMultiplier !== this.lastSpeedMultiplierString) {
@@ -605,7 +605,7 @@ class Game {
       }
     }
 
-    const targetSpeed = Math.min(12, currentLevelBaseSpeed + timeFactor * 0.15);
+    const targetSpeed = Math.min(18, currentLevelBaseSpeed + timeFactor * 0.15);
     this.balls.forEach(ball => {
       if (!ball.attached) {
         ball.speed = targetSpeed;
